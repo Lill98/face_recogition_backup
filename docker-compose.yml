@@ -1,0 +1,131 @@
+version: '3.5'
+services:
+  etcd:
+    restart: always
+    container_name: milvus-etcd-face-recognition
+    image: quay.io/coreos/etcd:v3.5.0
+    networks:
+      app_net:
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+
+  minio:
+    restart: always
+    container_name: milvus-minio-face-recognition
+    networks:
+      app_net:
+    image: minio/minio:RELEASE.2020-12-03T00-03-10Z
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data
+    command: minio server /minio_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  standalone:
+    restart: always
+    container_name: milvus-standalone-face-recognition
+    image: milvusdb/milvus:v2.0.2
+    command: ["milvus", "run", "standalone"]
+    networks:
+      app_net:
+        ipv4_address: 172.16.237.20
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
+    ports:
+      - "19531:19530" #only change port 19531
+    depends_on:
+      - "etcd"
+      - "minio"
+
+  mysql:
+    restart: always
+    container_name: img-search-mysql-face-recognition
+    image: mysql:5.7
+    networks:
+      app_net:
+        # ipv4_address: 172.16.238.11
+    volumes:
+    - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+    ports:
+      - "3308:3306"
+
+  main:
+    container_name: main_office-face-recognition
+    restart: always
+    build: .
+    ports:
+      - "5001:5001"
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/data:/data
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes:/volumes
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/backup:/backup
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/face_alignment:/app/face_alignment
+
+
+
+    depends_on:
+      - standalone
+      - mysql
+    # command: nvidia-smi
+    networks:
+      app_net:
+
+    # deploy gpu
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+      # etcd:
+      #   condition: start
+      # minio:
+      #   condition: service_healthy
+      # standalone:
+      #   condition: service_healthy
+      # mysql:
+      #   condition: service_healthy
+  # webclient:
+  #   restart: always
+  #   container_name: img-search-webclient
+  #   image: milvusbootcamp/img-search-client:1.0
+  #   networks:
+  #     app_net:
+  #       ipv4_address: 172.16.238.13
+  #   environment:
+  #     API_URL: 'http://127.0.0.1:5000'
+  #   ports:
+  #     - "8002:80"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://127.0.0.1:8002"]
+  #     interval: 30s
+  #     timeout: 20s
+  #     retries: 3
+
+networks:
+  app_net:
+    name: face_recognition
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.237.0/24
+          gateway: 172.16.237.1
+

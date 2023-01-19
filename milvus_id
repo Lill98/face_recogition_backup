@@ -1,0 +1,93 @@
+from config import MILVUS_HOST, MILVUS_PORT, VECTOR_DIMENSION, METRIC_TYPE
+from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection, utility
+connections.connect(host=MILVUS_HOST, port=MILVUS_PORT)
+collection = Collection(name='test')
+collection.load()
+res = collection.query(
+expr = "id in [435032227675111546]",
+output_fields = ["id"])
+res
+
+from config import MILVUS_HOST, MILVUS_PORT, VECTOR_DIMENSION, METRIC_TYPE
+from pymilvus import connections, FieldSchema, CollectionSchema, DataType, Collection, utility
+from pymilvus import CollectionSchema, FieldSchema, DataType
+book_id = FieldSchema(
+  name="book_id", 
+  dtype=DataType.INT64, 
+  is_primary=True, 
+  auto_id=True
+)
+
+word_count = FieldSchema(
+  name="word_count", 
+  dtype=DataType.INT64,  
+)
+book_intro = FieldSchema(
+  name="book_intro", 
+  dtype=DataType.FLOAT_VECTOR, 
+  dim=2
+)
+schema = CollectionSchema(
+  fields=[book_id, word_count, book_intro], 
+  description="Test book search"
+)
+collection_name = "book"
+from pymilvus import Collection
+connections.connect(host=MILVUS_HOST, port=MILVUS_PORT)
+
+collection = Collection(
+    name=collection_name, 
+    schema=schema, 
+    using='default', 
+    shards_num=2,
+    # consistency_level="Strong"
+    )
+
+
+import random
+data = [
+# [i for i in range(2)],
+[i for i in range(0, 2)],
+[[random.random() for _ in range(2)] for _ in range(2)]]
+
+from pymilvus import Collection
+collection = Collection("book")      # Get an existing collection.
+mr = collection.insert(data)
+
+index_params = {
+  "metric_type":"L2",
+  "index_type":"IVF_FLAT",
+  "params":{"nlist":1024}
+}
+from pymilvus import Collection
+collection = Collection("book")      # Get an existing collection.
+collection.create_index(
+  field_name="book_intro", 
+  index_params=index_params
+)
+
+from pymilvus import Collection
+collection = Collection("book")      # Get an existing collection.
+mr = collection.insert(data)
+
+collection.load()
+result = collection.query(expr="book_id > -1", output_fields=["book_id"])
+result
+
+search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
+results = collection.search(
+	data=[[0.1, 0.2]], 
+	anns_field="book_intro", 
+	param=search_params, 
+	limit=10, 
+	expr=None,
+	consistency_level="Strong"
+)
+results[0].ids
+results[0].distances
+
+
+data = [
+[i for i in range(0, 2)],
+[[random.random() for _ in range(2)] for _ in range(2)]]
+mr = collection.insert(data)

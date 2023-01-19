@@ -1,0 +1,1 @@
+python test_model.py  --path_folder  /data/frame_video_filter --number_image -1 --table_name test_model --path_model weights/adaface_ir101_webface12m.ckpt --drop
