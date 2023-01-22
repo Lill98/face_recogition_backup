@@ -5,10 +5,9 @@ from operations.backup_restore import backup, restore, get_newest_database
 from logs import LOGGER
 from starlette.middleware.cors import CORSMiddleware
 from typing import List
-from fastapi import FastAPI, File, UploadFile, Query
+from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Optional
-import requests
 
 app = FastAPI()
 origins = ["*"]
@@ -17,10 +16,8 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
-
+    allow_headers=["*"]
 )
-
 class Item(BaseModel):
     Table: Optional[str] = None
     File: str

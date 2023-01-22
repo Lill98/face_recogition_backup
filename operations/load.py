@@ -9,21 +9,23 @@ from logs import LOGGER
 
 
 # Get the path to the image
-def get_imgs(path, list_image_check = None):
+def get_imgs(path_root, list_image_check = None):
     pics = []
     name_folder = []
     print("list_image_check", list_image_check)
-    for folder in os.listdir(path):
-        path_folder = os.path.join(path, folder)
-        for f in os.listdir(path_folder):
-            if ((f.endswith(extension) for extension in
-                ['.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG', ".bmp"]) and not f.startswith('.DS_Store')):
-                if list_image_check:
-                    if os.path.join(path_folder, f) in list_image_check:
-                        # print("--------path exists", os.path.join(path_folder, f))
-                        continue
-                pics.append(os.path.join(path_folder, f))
-                name_folder.append(folder)
+    for company in os.listdir(path_root):
+        path = os.path.join(path_root, company)
+        for folder in os.listdir(path):
+            path_folder = os.path.join(path, folder)
+            for f in os.listdir(path_folder):
+                if ((f.endswith(extension) for extension in
+                    ['.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG', ".bmp"]) and not f.startswith('.DS_Store')):
+                    if list_image_check:
+                        if os.path.join(path_folder, f) in list_image_check:
+                            # print("--------path exists", os.path.join(path_folder, f))
+                            continue
+                    pics.append(os.path.join(path_folder, f))
+                    name_folder.append(folder)
     # print("pics", pics)
     return pics, name_folder
 

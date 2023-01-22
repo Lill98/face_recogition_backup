@@ -38,6 +38,8 @@ Replace checkpoint path at [here](https://github.com/Lill98/face_recognition/blo
 
 
 ## 3. Deploy
+### 3.1. Deploy service
+
 After install docker and docker-compose at 1, cd to YOUR_DIRECTORY and run 
 ```
 docker-compose -p face_recognition up --build -d
@@ -56,7 +58,19 @@ docker-compose -p face_recognition up -d
 The API as below:
 
 ![fastapi](pics/api.png)
-## 4. How to use
+
+### 3.2. Deploy backup restore
+Create environment with python 3.8  
+Install package:  
+```
+pip install -r requirements_backup.txt
+```
+run the api:
+```
+python main_backup_restore.py
+```
+
+## 4. How to use service api
 
 ### 4.1 Load image to database 
 - Put your image folder under **data directory**. For example name of folder is **company1** (you can put all staff_name_1 under data directory). Structure as bellow:
@@ -75,10 +89,13 @@ YOUR_DIRECTORY
 ...
 ```
 Navigate to load api and work as below:
-
+<!-- 
 ![fastapi](pics/API4.png)
-Path to image folder in this example is **/data/company1**
-![fastapi](pics/API5.png)
+Path to image folder in this example is **/data/company1** -->
+Table: Name of table  
+Check_exists: True if you wan to check pat, otherwise False
+File: Path to folder 
+![fastapi](pics/api5.png)
 
 Wait until receive message as below:
 
@@ -122,3 +139,11 @@ folder_name: folder's name want to delete
 
 Wait until receive message as below:
 ![fastapi](pics/API13.png)
+
+## 4. How to use backup api
+Open `127.0.0.1:5002/docs` in your browser to view all the APIs.
+
+- Navigate to backup_data to backup dataset
+- Navigate to get_backup_data to get name version data in backup folder
+- Navigate to restore_data to restore dataset.
+  + name_version: Name of version that you want to backup  
