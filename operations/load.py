@@ -1,25 +1,29 @@
+from logs import LOGGER
+from config import DEFAULT_TABLE
 import sys
 import os
 from diskcache import Cache
 import torch
 
 sys.path.append("..")
-from config import DEFAULT_TABLE
-from logs import LOGGER
 
 
 # Get the path to the image
-def get_imgs(path_root, list_image_check = None):
+def get_imgs(path_root, list_image_check=None):
     pics = []
     name_folder = []
     print("list_image_check", list_image_check)
-    for company in os.listdir(path_root):
-        path = os.path.join(path_root, company)
-        for folder in os.listdir(path):
-            path_folder = os.path.join(path, folder)
+    list_paths = list(os.walk(path_root))
+    for paths in list_paths:
+        if not paths[1]:
+            print("paths", paths)
+            folder = paths[0].split("/")[-1]
+            path_folder = paths[0]
             for f in os.listdir(path_folder):
                 if ((f.endswith(extension) for extension in
-                    ['.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG', ".bmp"]) and not f.startswith('.DS_Store')):
+                        ['.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG', ".bmp"]) and not f.startswith('.DS_Store')):
+                    print("os.path.join(path_folder, f)",
+                          os.path.join(path_folder, f))
                     if list_image_check:
                         if os.path.join(path_folder, f) in list_image_check:
                             # print("--------path exists", os.path.join(path_folder, f))
@@ -40,7 +44,7 @@ def extract_features(img_dir, model, list_check_image=None):
         # if os.path.isdir(img_dir):
         img_list, name_folders = get_imgs(img_dir, list_check_image)
         # elif type(img_dir) is list:
-            
+
         # total = len(img_list)
         # cache['total'] = total
         # print("img_list", img_list)
@@ -51,7 +55,6 @@ def extract_features(img_dir, model, list_check_image=None):
 
             print("embedding_result.cpu()", embedding_result.cpu().size())
             feats = (1*embedding_result.cpu()).detach().tolist()
-
 
             # print("img_path--", img_list)
             # names.append(img_path.encode() for img_path in img_list)
@@ -120,7 +123,8 @@ def do_load(table_name, image_dir, model, milvus_client, mysql_cli, list_check_i
     # print("loading image-----------------")
     if not table_name:
         table_name = DEFAULT_TABLE
-    vectors, path_images, list_folder_names = extract_features(image_dir, model, list_check_image)
+    vectors, path_images, list_folder_names = extract_features(
+        image_dir, model, list_check_image)
     # print("vectors",vectors)
     # vectors = -1*vectors
     # print("------------extract feature done")
@@ -134,7 +138,8 @@ def do_load(table_name, image_dir, model, milvus_client, mysql_cli, list_check_i
         # print("done index")
         mysql_cli.create_mysql_table(table_name)
         # print("done create_mysql_table")
-        mysql_cli.load_data_to_mysql(table_name, format_data(ids, path_images, list_folder_names, vectors))
+        mysql_cli.load_data_to_mysql(table_name, format_data(
+            ids, path_images, list_folder_names, vectors))
         len_ids = len(ids)
         # print("done load_data_to_mysql")
     else:

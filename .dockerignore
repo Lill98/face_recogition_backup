@@ -10,7 +10,7 @@ volumes
 data_
 weights_
 backup
-weights
+# weights
 test
 # C extensions
 *.so
