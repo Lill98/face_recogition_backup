@@ -11,7 +11,7 @@ volumes
 data_
 data/
 backup
-weights
+# weights
 test
 # weights/
 Test.ipynb

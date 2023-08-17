@@ -26,7 +26,7 @@ from infer_ada import *
 from typing import List
 from threading import Thread
 from operations.backup_restore import backup, restore
-# from 
+# from
 app = FastAPI()
 origins = ["*"]
 app.add_middleware(
@@ -38,7 +38,8 @@ app.add_middleware(
 
 )
 
-MODEL = Inference(check_point="weights/Retrain_101.ckpt")
+MODEL = Inference(
+    check_point="weights/Retrain_101.ckpt", device="cuda")
 
 MYSQL_CLI = MySQLHelper()
 MILVUS_CLI = MilvusHelper()
@@ -48,53 +49,64 @@ if not os.path.exists(UPLOAD_PATH):
     os.makedirs(UPLOAD_PATH)
     LOGGER.info(f"mkdir the path:{UPLOAD_PATH}")
 
+
 class ThreadWithReturnValue(Thread):
     def __init__(self, group=None, target=None, name=None,
                  args=(), kwargs={}, Verbose=None):
         Thread.__init__(self, group, target, name, args, kwargs)
         self._return = None
+
     def run(self):
         print(type(self._target))
         if self._target is not None:
             self._return = self._target(*self._args,
-                                                **self._kwargs)
+                                        **self._kwargs)
+
     def join(self, *args):
         Thread.join(self, *args)
         return self._return
-        
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     return JSONResponse({'detail': str(exc)}, status_code=400)
+
 
 class Item(BaseModel):
     Table: Optional[str] = None
     Check_exists: bool = False
     File: str
 
+
 @app.post('/img/load')
 async def load_images(item: Item):
     # Insert all the image under the file path to Milvus/MySQL
     try:
         if item.Check_exists:
-            list_check_image = MYSQL_CLI.search_image_path_by_table_name(item.Table)
+            list_check_image = MYSQL_CLI.search_image_path_by_table_name(
+                item.Table)
         else:
             list_check_image = None
-        total_num = do_load(item.Table, item.File, MODEL, MILVUS_CLI, MYSQL_CLI, list_check_image)
+        total_num = do_load(item.Table, item.File, MODEL,
+                            MILVUS_CLI, MYSQL_CLI, list_check_image)
         LOGGER.info(f"Successfully loaded data, total count: {total_num}")
         return "Successfully loaded data!"
     except Exception as e:
         LOGGER.error(e)
         return {'status': False, 'msg': e}, 400
 
+
 def make_dir(path):
     if not os.path.exists(path):
         os.mkdir(path)
 
-def upload_data(url, img_path, table_name): #async 
+
+def upload_data(url, img_path, table_name):  # async
     # Insert the upload image to Milvus/MySQL
     try:
         name_folder = url.split("/")[-1]
-        vector_id = do_upload(table_name, img_path, MODEL, MILVUS_CLI, MYSQL_CLI, name_folder)
+        vector_id = do_upload(table_name, img_path, MODEL,
+                              MILVUS_CLI, MYSQL_CLI, name_folder)
         LOGGER.info(f"Successfully uploaded data, vector id: {vector_id}")
         # result.update({'status': True, 'msg': "Successfully loaded data: " + img_path})
         return {'status': True, 'msg': "Successfully loaded data: " + img_path}
@@ -109,22 +121,23 @@ async def upload_images(images: List[UploadFile] = File(None), urls: List[str] =
     list_image = []
     result = {'status': True, 'msg': ""}
     for image, url in zip(images, urls):
-        split_path = [i for i in url.split("/") if len(i)>0]
-        for i in range(1,len(split_path)+1):
+        split_path = [i for i in url.split("/") if len(i) > 0]
+        for i in range(1, len(split_path)+1):
             make_dir("/" + "/".join(split_path[:i]))
         # Save the upload image to server.
         if image is not None and url is not None:
-            content =  await image.read() #await
+            content = await image.read()  # await
             print('read pic succ')
             img_path = os.path.join(url, image.filename)
             list_image.append(image.filename)
             with open(img_path, "wb+") as f:
                 f.write(content)
-            
+
         else:
             return {'status': False, 'msg': 'Image and url are required'}, 400
 
-        thread = ThreadWithReturnValue(target=upload_data, args=(url, img_path, table_name))
+        thread = ThreadWithReturnValue(
+            target=upload_data, args=(url, img_path, table_name))
         thread.start()
         list_thread.append(thread)
 
@@ -140,13 +153,12 @@ async def upload_images(images: List[UploadFile] = File(None), urls: List[str] =
         elif not result_["status"]:
             result["status"] = False
             result["msg"] += ", " + result_["msg"]
-        
+
     if result["status"]:
         result["msg"] = "Successfully uploaded data"
         return result
     else:
         return result, 400
-        
 
 
 @app.post('/img/search_topk')
@@ -160,7 +172,8 @@ async def search_images(image: UploadFile = File(...), topk: int = Form(TOP_K), 
         # print("img_path", img_path)
         with open(img_path, "wb+") as f:
             f.write(content)
-        name_folder, paths, distances = do_search(table_name, img_path, topk, MODEL, MILVUS_CLI, MYSQL_CLI)
+        name_folder, paths, distances = do_search(
+            table_name, img_path, topk, MODEL, MILVUS_CLI, MYSQL_CLI)
         res = dict(zip(paths, distances))
         # print("---res", res)
         res = sorted(res.items(), key=lambda item: item[1], reverse=True)
@@ -182,7 +195,8 @@ async def search_images_real(image: UploadFile = File(...), topk: int = Form(TOP
         # print("img_path", img_path)
         with open(img_path, "wb+") as f:
             f.write(content)
-        name_folder, paths, distances = do_search(table_name, img_path, topk, MODEL, MILVUS_CLI, MYSQL_CLI)
+        name_folder, paths, distances = do_search(
+            table_name, img_path, topk, MODEL, MILVUS_CLI, MYSQL_CLI)
         res = dict(zip(paths, zip(name_folder, distances)))
         # print("--res", res)
         res = sorted(res.items(), key=lambda item: item[1][-1], reverse=True)
@@ -200,11 +214,10 @@ async def search_images_real(image: UploadFile = File(...), topk: int = Form(TOP
                     break
 
         LOGGER.info("Successfully searched similar images!")
-        return {"name":value_init[-1][0], "cosine similarity":value_init[-1][1], "path": value_init[0]}
+        return {"name": value_init[-1][0], "cosine similarity": value_init[-1][1], "path": value_init[0]}
     except Exception as e:
         LOGGER.error(e)
         return {' ': False, 'msg': e}, 400
-
 
 
 @app.post('/img/count')
@@ -230,6 +243,7 @@ async def drop_tables(table_name: str = None):
         LOGGER.error(e)
         return {'status': False, 'msg': e}, 400
 
+
 @app.post('/img/drop_entity')
 async def drop_entity(table_name: str = None, folder_name: str = None):
     # Delete the collection of Milvus and MySQL
@@ -240,6 +254,7 @@ async def drop_entity(table_name: str = None, folder_name: str = None):
     except Exception as e:
         LOGGER.error(e)
         return {'status': False, 'msg': e}, 400
+
 
 @app.post('/img/get_name_table')
 async def get_name_table():

@@ -27,7 +27,13 @@ services:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data
     command: minio server /minio_data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:9000/minio/health/live"
+        ]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -36,7 +42,7 @@ services:
     restart: always
     container_name: milvus-standalone-face-recognition
     image: milvusdb/milvus:v2.0.2
-    command: ["milvus", "run", "standalone"]
+    command: [ "milvus", "run", "standalone" ]
     networks:
       app_net:
         ipv4_address: 172.16.237.20
@@ -56,10 +62,9 @@ services:
     container_name: img-search-mysql-face-recognition
     image: mysql:5.7
     networks:
-      app_net:
-        # ipv4_address: 172.16.238.11
+      app_net: # ipv4_address: 172.16.238.11
     volumes:
-    - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/mysql:/var/lib/mysql
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/mysql:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=123456
     ports:
@@ -77,8 +82,6 @@ services:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/backup:/backup
       - ${DOCKER_VOLUME_DIRECTORY:-.}/face_alignment:/app/face_alignment
 
-
-
     depends_on:
       - standalone
       - mysql
@@ -86,14 +89,14 @@ services:
     networks:
       app_net:
 
-    # deploy gpu
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+        # deploy gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
       # etcd:
       #   condition: start
       # minio:
@@ -102,22 +105,22 @@ services:
       #   condition: service_healthy
       # mysql:
       #   condition: service_healthy
-  # webclient:
-  #   restart: always
-  #   container_name: img-search-webclient
-  #   image: milvusbootcamp/img-search-client:1.0
-  #   networks:
-  #     app_net:
-  #       ipv4_address: 172.16.238.13
-  #   environment:
-  #     API_URL: 'http://127.0.0.1:5000'
-  #   ports:
-  #     - "8002:80"
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://127.0.0.1:8002"]
-  #     interval: 30s
-  #     timeout: 20s
-  #     retries: 3
+      # webclient:
+      #   restart: always
+      #   container_name: img-search-webclient
+      #   image: milvusbootcamp/img-search-client:1.0
+      #   networks:
+      #     app_net:
+      #       ipv4_address: 172.16.238.13
+      #   environment:
+      #     API_URL: 'http://127.0.0.1:5000'
+      #   ports:
+      #     - "8002:80"
+      #   healthcheck:
+      #     test: ["CMD", "curl", "-f", "http://127.0.0.1:8002"]
+      #     interval: 30s
+      #     timeout: 20s
+      #     retries: 3
 
 networks:
   app_net:
@@ -128,4 +131,3 @@ networks:
       config:
         - subnet: 172.16.237.0/24
           gateway: 172.16.237.1
-
