@@ -104,12 +104,16 @@ def make_dir(path):
 def upload_data(url, img_path, table_name):  # async
     # Insert the upload image to Milvus/MySQL
     try:
+
         name_folder = url.split("/")[-1]
         vector_id = do_upload(table_name, img_path, MODEL,
                               MILVUS_CLI, MYSQL_CLI, name_folder)
-        LOGGER.info(f"Successfully uploaded data, vector id: {vector_id}")
-        # result.update({'status': True, 'msg': "Successfully loaded data: " + img_path})
-        return {'status': True, 'msg': "Successfully loaded data: " + img_path}
+        if vector_id:
+            LOGGER.info(f"Successfully uploaded data, vector id: {vector_id}")
+            # result.update({'status': True, 'msg': "Successfully loaded data: " + img_path})
+            return {'status': True, 'msg': "Successfully loaded data: " + img_path}
+        else:
+            return None
     except Exception as e:
         LOGGER.error(e)
         return {'status': False, 'msg': str(e)}
@@ -145,7 +149,7 @@ async def upload_images(images: List[UploadFile] = File(None), urls: List[str] =
     for thread in list_thread:
         result_ = thread.join()
         result_list.append(result_)
-
+    # print("result_list", result_list)
     for idx, result_ in enumerate(result_list):
         if result_ is None:
             image_wrong = list_image[idx]
