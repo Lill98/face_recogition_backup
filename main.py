@@ -26,6 +26,8 @@ from infer_ada import *
 from typing import List
 from threading import Thread
 from operations.backup_restore import backup, restore
+from operations.load import format_data
+
 # from
 app = FastAPI()
 origins = ["*"]
@@ -106,14 +108,10 @@ def upload_data(url, img_path, table_name):  # async
     try:
 
         name_folder = url.split("/")[-1]
-        vector_id = do_upload(table_name, img_path, MODEL,
-                              MILVUS_CLI, MYSQL_CLI, name_folder)
-        if vector_id:
-            LOGGER.info(f"Successfully uploaded data, vector id: {vector_id}")
-            # result.update({'status': True, 'msg': "Successfully loaded data: " + img_path})
-            return {'status': True, 'msg': "Successfully loaded data: " + img_path}
-        else:
-            return None
+        ids, img_path, name_folder, feat = do_upload(table_name, img_path, MODEL,
+                                                     MILVUS_CLI, MYSQL_CLI, name_folder)
+        return ids, img_path, name_folder, feat
+
     except Exception as e:
         LOGGER.error(e)
         return {'status': False, 'msg': str(e)}
@@ -123,6 +121,11 @@ def upload_data(url, img_path, table_name):  # async
 async def upload_images(images: List[UploadFile] = File(None), urls: List[str] = Query(...), table_name: str = None):
     list_thread = []
     list_image = []
+    list_fail_detect = []
+    list_ids = []
+    list_img_path = []
+    list_name_folder = []
+    list_feat = []
     result = {'status': True, 'msg': ""}
     for image, url in zip(images, urls):
         split_path = [i for i in url.split("/") if len(i) > 0]
@@ -145,18 +148,22 @@ async def upload_images(images: List[UploadFile] = File(None), urls: List[str] =
         thread.start()
         list_thread.append(thread)
 
-    result_list = []
     for thread in list_thread:
-        result_ = thread.join()
-        result_list.append(result_)
-    # print("result_list", result_list)
-    for idx, result_ in enumerate(result_list):
-        if result_ is None:
-            image_wrong = list_image[idx]
-            return {'status': False, 'msg': f'Can not detect face at image {image_wrong}. Please replace other image'}, 400
-        elif not result_["status"]:
-            result["status"] = False
-            result["msg"] += ", " + result_["msg"]
+        ids, img_path, name_folder, feat = thread.join()
+        if ids:
+            list_ids.append(ids[0])
+            list_img_path.append(img_path)
+            list_name_folder.append(name_folder)
+            list_feat.append(feat[0])
+        else:
+            list_fail_detect.append(img_path.split("/")[-1])
+    if list_ids:
+        MYSQL_CLI.create_mysql_table(table_name)
+        MYSQL_CLI.load_data_to_mysql(table_name, format_data(
+            list_ids, list_img_path, list_name_folder, list_feat))
+
+    if list_fail_detect:
+        return {'status': False, 'msg': f'Can not detect face at image {list_fail_detect}. Please replace other image'}, 400
 
     if result["status"]:
         result["msg"] = "Successfully uploaded data"

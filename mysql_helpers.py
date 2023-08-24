@@ -12,23 +12,25 @@ class MySQLHelper():
         args_0 (`type`):
         ...
     """
+
     def __init__(self):
         self.conn = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, port=MYSQL_PORT, password=MYSQL_PWD,
                                     database=MYSQL_DB,
                                     local_infile=True)
         self.cursor = self.conn.cursor()
+        # self.cursor.execute('set max_allowed_packet=67108864')
 
     def test_connection(self):
         try:
             self.conn.ping()
         except Exception:
             self.conn = pymysql.connect(host=MYSQL_HOST, user=MYSQL_USER, port=MYSQL_PORT, password=MYSQL_PWD,
-                                    database=MYSQL_DB,local_infile=True)
+                                        database=MYSQL_DB, local_infile=True)
             self.cursor = self.conn.cursor()
 
     def get_name_table(self):
         self.test_connection()
-        sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = '" + MYSQL_DB +"';"
+        sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = '" + MYSQL_DB + "';"
         # print("sql", sql)
         try:
             self.cursor.execute(sql)
@@ -39,12 +41,12 @@ class MySQLHelper():
         except Exception as e:
             LOGGER.error(f"MYSQL ERROR: {e} with sql: {sql}")
             sys.exit(1)
-        
-         
+
     def create_mysql_table(self, table_name):
         # Create mysql table if not exists
         self.test_connection()
-        sql = "create table if not exists " + table_name + "(milvus_id TEXT, image_path TEXT, name_folder TEXT, embedding TEXT);"
+        sql = "create table if not exists " + table_name + \
+            "(milvus_id TEXT, image_path TEXT, name_folder TEXT, embedding TEXT);"
         try:
             self.cursor.execute(sql)
             LOGGER.debug(f"MYSQL create table: {table_name} with sql: {sql}")
@@ -55,12 +57,15 @@ class MySQLHelper():
     def load_data_to_mysql(self, table_name, data):
         # Batch insert (Milvus_ids, img_path) to mysql
         self.test_connection()
-        sql = "insert into " + table_name + " (milvus_id, image_path, name_folder, embedding) values (%s,%s,%s, %s);"
+        sql = "insert into " + table_name + \
+            " (milvus_id, image_path, name_folder, embedding) values (%s,%s,%s, %s);"
         try:
             self.cursor.executemany(sql, data)
             self.conn.commit()
-            LOGGER.debug(f"MYSQL loads data to table: {table_name} successfully")
+            LOGGER.debug(
+                f"MYSQL loads data to table: {table_name} successfully")
         except Exception as e:
+            # print("data", data)
             LOGGER.error(f"MYSQL ERROR: {e} with sql: {sql}")
             sys.exit(1)
 
@@ -68,7 +73,9 @@ class MySQLHelper():
         # Get the img_path according to the milvus ids
         self.test_connection()
         str_ids = str(ids).replace('[', '').replace(']', '')
-        sql = "select image_path, name_folder from " + table_name + " where milvus_id in (" + str_ids + ") order by field (milvus_id," + str_ids + ");"
+        sql = "select image_path, name_folder from " + table_name + \
+            " where milvus_id in (" + str_ids + \
+            ") order by field (milvus_id," + str_ids + ");"
         try:
             self.cursor.execute(sql)
             results = self.cursor.fetchall()
@@ -83,7 +90,8 @@ class MySQLHelper():
 
     def search_milvus_ids_by_name_folder(self, table_name, name_folder):
         self.test_connection()
-        sql = "select milvus_id, image_path  from " + table_name + " where name_folder='" + name_folder + "';"
+        sql = "select milvus_id, image_path  from " + \
+            table_name + " where name_folder='" + name_folder + "';"
         print("sql", sql)
         try:
             self.cursor.execute(sql)
@@ -93,7 +101,7 @@ class MySQLHelper():
         except Exception as e:
             LOGGER.error(f"MYSQL ERROR: {e} with sql: {sql}")
             sys.exit(1)
-    
+
     def search_image_path_by_table_name(self, table_name):
         self.test_connection()
         sql = "select image_path  from " + table_name + ";"
@@ -121,13 +129,16 @@ class MySQLHelper():
     def delete_entity(self, table_name, milvus_id):
         # Delete mysql table if exists
         self.test_connection()
-        print("tuple([str(i) for i in milvus_id])", tuple([str(i) for i in milvus_id]))
-        print("milvus_id",milvus_id)
+        # print("tuple([str(i) for i in milvus_id])",
+        #       tuple([str(i) for i in milvus_id]))
+        # print("milvus_id", milvus_id)
         if len(milvus_id) == 1:
-            sql = 'delete from ' + table_name + ' where milvus_id in (' + str(milvus_id[0]) + ');'
+            sql = 'delete from ' + table_name + \
+                ' where milvus_id in (' + str(milvus_id[0]) + ');'
         else:
-            sql = 'delete from ' + table_name + ' where milvus_id in ' + str(tuple([str(i) for i in milvus_id])) + ';'
-        print("sql delete", sql)
+            sql = 'delete from ' + table_name + ' where milvus_id in ' + \
+                str(tuple([str(i) for i in milvus_id])) + ';'
+        # print("sql delete", sql)
         try:
             self.cursor.execute(sql)
             self.conn.commit()

@@ -61,6 +61,7 @@ services:
     restart: always
     container_name: img-search-mysql-face-recognition
     image: mysql:5.7
+    command: --max_allowed_packet=67108864
     networks:
       app_net: # ipv4_address: 172.16.238.11
     volumes:
@@ -81,6 +82,7 @@ services:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes:/volumes
       - ${DOCKER_VOLUME_DIRECTORY:-.}/backup:/backup
       - ${DOCKER_VOLUME_DIRECTORY:-.}/face_alignment:/app/face_alignment
+      - .:/app
 
     depends_on:
       - standalone
