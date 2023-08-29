@@ -41,7 +41,7 @@ app.add_middleware(
 )
 
 MODEL = Inference(
-    check_point="weights/Retrain_101.ckpt", device="cuda")
+    check_point="weights/Retrain_101.ckpt", device="cpu")
 
 MYSQL_CLI = MySQLHelper()
 MILVUS_CLI = MilvusHelper()
@@ -278,4 +278,5 @@ async def get_name_table():
 
 # print("a")
 if __name__ == '__main__':
-    uvicorn.run(app=app, host='0.0.0.0', port=5001)
+    uvicorn.run("main:app", host='0.0.0.0', port=5001,
+                workers=3)
