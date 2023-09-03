@@ -3,6 +3,30 @@
 ## 1. Requirements
 - [Docker](https://docs.docker.com/engine/install/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
+At the manager node run this command to open the port:
+```
+sudo ufw allow 22/tcp
+sudo ufw allow 2376/tcp
+sudo ufw allow 2377/tcp
+sudo ufw allow 7946/tcp
+sudo ufw allow 7946/udp
+sudo ufw allow 4789/udp
+sudo firewall-cmd --reload
+```
+At the woker node run this command to open the port:
+```
+sudo ufw allow 22/tcp
+
+sudo ufw allow 2376/tcp
+
+sudo ufw allow 7946/tcp
+
+sudo ufw allow 7946/udp
+
+sudo ufw allow 4789/udp
+
+sudo firewall-cmd --reload
+```
 
 ## 2. Set up
 Clone code and put code at your directory. I call this is YOUR_DIRECTORY. Create new data directory. Structure as below:
@@ -38,22 +62,75 @@ Replace checkpoint path at [here](https://github.com/Lill98/face_recognition/blo
 
 
 ## 3. Deploy
+### Install the share volume
+Install gluster at all machine joined the swarm: 
+For example we have ip manager node(docker-master) and ip woker node(docker-node1) is: IP1, IP2 respectively 
+```
+sudo apt-get update
+sudo apt-get upgrade -y
+sudo nano /etc/hosts
+```
+add the bellow line to the hosts file:  
+```
+IP1 docker-master
+IP2 docker-node1
+```
+after that we will install gluster:
+```
+sudo apt-get install software-properties-common -y
+sudo add-apt-repository ppa:gluster/glusterfs-3.12
+sudo apt-get update
+sudo apt install glusterfs-server -y
+sudo systemctl start glusterd
+sudo systemctl enable glusterd
+```
+from the manager node run (this command run only on manager node):
+```
+gluster peer probe docker-node1;
+
+```
+create folder to save volume
+```
+sudo mkdir -p /gluster/volume1
+sudo mkdir /fr_test
+sudo chmod 777 /fr_test
+sudo gluster volume create face_recognition replica 2 transport tcp IP1:/gluster/volume1 IP2:/gluster/volume2 force
+
+```
+from the manager node run (this command run only on manager node):
+```
+sudo gluster volume create face_recognition replica 2 transport tcp IP1:/gluster/volume1 IP2:/gluster/volume2 force
+```
+
+mount client folder to volume:
+```
+mount -t glusterfs localhost:face_recognition /fr_test
+```
+
+ 
+
 ### 3.1. Deploy service
 
-After install docker and docker-compose at 1, cd to YOUR_DIRECTORY and run 
+
+cd to milvus_compose folder and run:
 ```
-docker-compose -p face_recognition up --build -d
+docker-compose up --build -d
 ```
-Open `127.0.0.1:5001/docs` in your browser to view all the APIs.
+cd back to YOUR_DIRECTORY and run:
+```
+docker stack deploy --compose-file docker-compose.yml face_recognition
+```
+Open `IP1:5001/docs` or `IP2:5001/docs` in your browser to view all the APIs.
 
 To close the container run:
 ```
-docker-compose -p face_recognition down
+docker stack rm face_recognition
 
 ```
-To restart the docker run:
+
+cd to milvus_compose and run :
 ```
-docker-compose -p face_recognition up -d
+docker compose down -d
 ```
 The API as below:
 
