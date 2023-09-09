@@ -62,7 +62,8 @@ Replace checkpoint path at [here](https://github.com/Lill98/face_recognition/blo
 
 
 ## 3. Deploy
-### Install the share volume
+### 3.1 pre-requisite
+#### Install the share volume
 Install gluster at all machine joined the swarm: 
 For example we have ip manager node(docker-master) and ip woker node(docker-node1) is: IP1, IP2 respectively 
 ```
@@ -107,14 +108,18 @@ mount client folder to volume:
 mount -t glusterfs localhost:face_recognition /fr_test
 ```
 
- 
+#### Install the nvidia docker swarm
+
+please read [here](https://gist.github.com/coltonbh/374c415517dbeb4a6aa92f462b9eb287).
 
 ### 3.1. Deploy service
 
 
 cd to milvus_compose folder and run:
 ```
-docker-compose up --build -d
+docker-compose build
+docker-compose push
+docker-compose up -d
 ```
 cd back to YOUR_DIRECTORY and run:
 ```

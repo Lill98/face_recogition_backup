@@ -1,7 +1,7 @@
 version: '3.5'
 services:
   main:
-    image: quanlill/main_office_face_recognition_cpu
+    image: quanlill/main_office_face_recognition_gpu
     # restart: always
     build: .
     ports:
@@ -16,12 +16,12 @@ services:
       # replicas: 5
       # restart_policy:
       #   condition: on-failure
-      # resources:
-      #   reservations:
-      #     generic_resources:
-      #       - discrete_resource_spec:
-      #           kind: 'NVIDIA-GPU'
-      #           value: 0
+      resources:
+        reservations:
+          generic_resources:
+            - discrete_resource_spec:
+                kind: 'NVIDIA-GPU'
+                value: 0
       #   reservations:
       #     devices:
       #       - driver: nvidia

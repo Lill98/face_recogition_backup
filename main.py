@@ -41,7 +41,7 @@ app.add_middleware(
 )
 
 MODEL = Inference(
-    check_point="weights/Retrain_101.ckpt", device="cpu")
+    check_point="weights/Retrain_101.ckpt", device="cuda")
 
 MYSQL_CLI = MySQLHelper()
 MILVUS_CLI = MilvusHelper()
