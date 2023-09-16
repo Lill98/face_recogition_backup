@@ -1,4 +1,5 @@
-FROM python:3.8-slim-buster
+# FROM python:3.8-slim-buster
+FROM pytorch/pytorch:1.12.1-cuda11.3-cudnn8-devel
 RUN apt-get update
 RUN pip install --upgrade pip
 RUN apt-get install ffmpeg libsm6 libxext6  -y
