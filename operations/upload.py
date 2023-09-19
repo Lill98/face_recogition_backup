@@ -10,8 +10,8 @@ def do_upload(table_name, img_path, model, milvus_client, mysql_cli, name_folder
         if not table_name:
             table_name = DEFAULT_TABLE
         embedding_result, name_folders, img_list = model.infer([img_path])
-        feat = embedding_result.cpu().detach().tolist()
-        if feat:
+        if embedding_result:
+            feat = embedding_result.cpu().detach().tolist()
             ids = milvus_client.insert_entity(table_name, feat)
             milvus_client.create_index(table_name)
             return ids, img_path, name_folder, feat
