@@ -16,7 +16,7 @@ def get_imgs(path_root, list_image_check=None):
     list_paths = list(os.walk(path_root))
     for paths in list_paths:
         if not paths[1]:
-            print("paths", paths)
+            # print("paths", paths)
             folder = paths[0].split("/")[-1]
             path_folder = paths[0]
             for f in os.listdir(path_folder):
@@ -53,7 +53,7 @@ def extract_features(img_dir, model, list_check_image=None):
             # resut_distance = torch.cdist(embedding_result.cpu(), embedding_result.cpu(), 2)
             # print("resut_distance", resut_distance)
 
-            print("embedding_result.cpu()", embedding_result.cpu().size())
+            # print("embedding_result.cpu()", embedding_result.cpu().size())
             feats = (1*embedding_result.cpu()).detach().tolist()
 
             # print("img_path--", img_list)

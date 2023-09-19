@@ -41,7 +41,7 @@ app.add_middleware(
 )
 
 MODEL = Inference(
-    check_point="weights/Retrain_101.ckpt", device="cuda")
+    check_point="weights/Retrain_101.ckpt", device="cpu")
 
 MYSQL_CLI = MySQLHelper()
 MILVUS_CLI = MilvusHelper()
@@ -128,14 +128,16 @@ async def upload_images(images: List[UploadFile] = File(None), urls: List[str] =
     list_feat = []
     result = {'status': True, 'msg': ""}
     for image, url in zip(images, urls):
-        split_path = [i for i in url.split("/") if len(i) > 0]
-        for i in range(1, len(split_path)+1):
-            make_dir("/" + "/".join(split_path[:i]))
+        os.makedirs(url, exist_ok=True)
+        # split_path = [i for i in url.split("/") if len(i) > 0]
+        # for i in range(1, len(split_path)+1):
+        #     make_dir("/" + "/".join(split_path[:i]))
         # Save the upload image to server.
         if image is not None and url is not None:
             content = await image.read()  # await
             print('read pic succ')
             img_path = os.path.join(url, image.filename)
+            # print("img_path", img_path)
             list_image.append(image.filename)
             with open(img_path, "wb+") as f:
                 f.write(content)
@@ -260,7 +262,7 @@ async def drop_entity(table_name: str = None, folder_name: str = None):
     # Delete the collection of Milvus and MySQL
     try:
         status = do_drop_entity(table_name, MILVUS_CLI, MYSQL_CLI, folder_name)
-        LOGGER.info("Successfully drop tables in Milvus and MySQL!")
+        LOGGER.info("Successfully drop entity in Milvus and MySQL!")
         return status
     except Exception as e:
         LOGGER.error(e)

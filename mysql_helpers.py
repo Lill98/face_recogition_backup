@@ -113,7 +113,7 @@ class MySQLHelper():
             return [i[0] for i in results]
         except Exception as e:
             LOGGER.error(f"MYSQL ERROR: {e} with sql: {sql}")
-            sys.exit(1)
+            return None
 
     def delete_table(self, table_name):
         # Delete mysql table if exists
