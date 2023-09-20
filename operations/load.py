@@ -50,33 +50,34 @@ def extract_features(img_dir, model, list_check_image=None):
         # print("img_list", img_list)
         if len(img_list):
             embedding_result, name_folders, img_list = model.infer(img_list)
-            # resut_distance = torch.cdist(embedding_result.cpu(), embedding_result.cpu(), 2)
-            # print("resut_distance", resut_distance)
+            if embedding_result is not None:
+                # resut_distance = torch.cdist(embedding_result.cpu(), embedding_result.cpu(), 2)
+                # print("resut_distance", resut_distance)
 
-            # print("embedding_result.cpu()", embedding_result.cpu().size())
-            feats = (1*embedding_result.cpu()).detach().tolist()
+                # print("embedding_result.cpu()", embedding_result.cpu().size())
+                feats = (1*embedding_result.cpu()).detach().tolist()
 
-            # print("img_path--", img_list)
-            # names.append(img_path.encode() for img_path in img_list)
-            # print("img_path--encode", names)
+                # print("img_path--", img_list)
+                # names.append(img_path.encode() for img_path in img_list)
+                # print("img_path--encode", names)
 
-            for img_path, name_folder in zip(img_list, name_folders):
-                path_images.append(img_path.encode())
-                list_folder_names.append(name_folder.encode())
-                # try:
-                #     # norm_feat = model.resnet50_extract_feat(img_path)
-                #     norm_feat = model.resnet50_extract_feat(img_path)
-                #     print("norm_feat", type(norm_feat))
-                #     feats.append(norm_feat)
-                #     names.append(img_path.encode())
-                #     cache['current'] = i + 1
-                #     print(f"Extracting feature from image No. {i + 1} , {total} images in total")
-                # except Exception as e:
-                #     LOGGER.error(f"Error with extracting feature from image {e}")
-                #     continue
-            return feats, path_images, list_folder_names
-        else:
-            return None, None, None
+                for img_path, name_folder in zip(img_list, name_folders):
+                    path_images.append(img_path.encode())
+                    list_folder_names.append(name_folder.encode())
+                    # try:
+                    #     # norm_feat = model.resnet50_extract_feat(img_path)
+                    #     norm_feat = model.resnet50_extract_feat(img_path)
+                    #     print("norm_feat", type(norm_feat))
+                    #     feats.append(norm_feat)
+                    #     names.append(img_path.encode())
+                    #     cache['current'] = i + 1
+                    #     print(f"Extracting feature from image No. {i + 1} , {total} images in total")
+                    # except Exception as e:
+                    #     LOGGER.error(f"Error with extracting feature from image {e}")
+                    #     continue
+                return feats, path_images, list_folder_names
+        # else:
+        return None, None, None
 
     except Exception as e:
         LOGGER.error(f"Error with extracting feature from image {e}")

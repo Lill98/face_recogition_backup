@@ -41,7 +41,7 @@ app.add_middleware(
 )
 
 MODEL = Inference(
-    check_point="weights/Retrain_101.ckpt", device="cpu")
+    check_point="weights/Retrain_101.ckpt", device="cuda")
 
 MYSQL_CLI = MySQLHelper()
 MILVUS_CLI = MilvusHelper()
@@ -210,24 +210,27 @@ async def search_images_real(image: UploadFile = File(...), topk: int = Form(TOP
             f.write(content)
         name_folder, paths, distances = do_search(
             table_name, img_path, topk, MODEL, MILVUS_CLI, MYSQL_CLI)
-        res = dict(zip(paths, zip(name_folder, distances)))
-        # print("--res", res)
-        res = sorted(res.items(), key=lambda item: item[1][-1], reverse=True)
-        # print("sort", res)
-        if len(res) > 2:
-            res = res[:3]
-        list_name_folder = [values[-1][0] for values in res]
-        num_init = 1
-        value_init = res[0]
-        for idx, name in enumerate(list_name_folder):
-            num_ap = list_name_folder.count(name)
-            if num_ap > num_init:
-                value_init = res[idx]
-                if idx == 0:
-                    break
+        if name_folder is not None:
+            res = dict(zip(paths, zip(name_folder, distances)))
+            # print("--res", res)
+            res = sorted(res.items(), key=lambda item: item[1][-1], reverse=True)
+            # print("sort", res)
+            if len(res) > 2:
+                res = res[:3]
+            list_name_folder = [values[-1][0] for values in res]
+            num_init = 1
+            value_init = res[0]
+            for idx, name in enumerate(list_name_folder):
+                num_ap = list_name_folder.count(name)
+                if num_ap > num_init:
+                    value_init = res[idx]
+                    if idx == 0:
+                        break
 
-        LOGGER.info("Successfully searched similar images!")
-        return {"name": value_init[-1][0], "cosine similarity": value_init[-1][1], "path": value_init[0]}
+            LOGGER.info("Successfully searched similar images!")
+            return {"name": value_init[-1][0], "cosine similarity": value_init[-1][1], "path": value_init[0]}
+        else:
+            return {"can't detect face"}
     except Exception as e:
         LOGGER.error(e)
         return {' ': False, 'msg': e}, 400
