@@ -21,5 +21,5 @@ def do_upload(table_name, img_path, model, milvus_client, mysql_cli, name_folder
 
     except Exception as e:
         LOGGER.error(f"Error with upload : {e}")
-        return None
+        return None, None, None, None
         sys.exit(1)

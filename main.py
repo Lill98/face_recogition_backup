@@ -158,7 +158,8 @@ async def upload_images(images: List[UploadFile] = File(None), urls: List[str] =
             list_name_folder.append(name_folder)
             list_feat.append(feat[0])
         else:
-            list_fail_detect.append(img_path.split("/")[-1])
+            if img_path:
+                list_fail_detect.append(img_path.split("/")[-1])
     if list_ids:
         MYSQL_CLI.create_mysql_table(table_name)
         MYSQL_CLI.load_data_to_mysql(table_name, format_data(
@@ -213,7 +214,8 @@ async def search_images_real(image: UploadFile = File(...), topk: int = Form(TOP
         if name_folder is not None:
             res = dict(zip(paths, zip(name_folder, distances)))
             # print("--res", res)
-            res = sorted(res.items(), key=lambda item: item[1][-1], reverse=True)
+            res = sorted(
+                res.items(), key=lambda item: item[1][-1], reverse=True)
             # print("sort", res)
             if len(res) > 2:
                 res = res[:3]
