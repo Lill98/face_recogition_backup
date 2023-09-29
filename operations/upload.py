@@ -17,9 +17,9 @@ def do_upload(table_name, img_path, model, milvus_client, mysql_cli, name_folder
             milvus_client.create_index(table_name)
             return ids, img_path, name_folder, feat
         else:
-            return None, None, None, None
+            return None, img_path, name_folder, None
 
     except Exception as e:
         LOGGER.error(f"Error with upload : {e}")
-        return None, None, None, None
+        return None, img_path, name_folder, None
         sys.exit(1)

@@ -19,6 +19,7 @@ class MultiprocessHandler(logging.FileHandler):
         args_0 (`type`):
         ...
     """
+
     def __init__(self, filename, when='D', backupCount=0, encoding=None, delay=False):
         self.prefix = filename
         self.backupCount = backupCount
@@ -37,7 +38,8 @@ class MultiprocessHandler(logging.FileHandler):
             print('The specified date interval unit is invalid: ', self.when)
             sys.exit(1)
 
-        self.filefmt = os.path.join('.', "logs", f"{self.prefix}-{self.suffix}.log")
+        self.filefmt = os.path.join(
+            '.', "logs", f"{self.prefix}-{self.suffix}.log")
 
         self.filePath = datetime.datetime.now().strftime(self.filefmt)
 
@@ -53,7 +55,8 @@ class MultiprocessHandler(logging.FileHandler):
         if codecs is None:
             encoding = None
 
-        logging.FileHandler.__init__(self, self.filePath, 'a+', encoding, delay)
+        logging.FileHandler.__init__(
+            self, self.filePath, 'a+', encoding, delay)
 
     def shouldChangeFileToWrite(self):
         _filePath = datetime.datetime.now().strftime(self.filefmt)
@@ -64,11 +67,14 @@ class MultiprocessHandler(logging.FileHandler):
 
     def doChangeFile(self):
         self.baseFilename = os.path.abspath(self.filePath)
+        path = os.path.dirname(self.baseFilename)
+        os.makedirs(path, exist_ok=True)
         if self.stream:
             self.stream.close()
             self.stream = None
 
         if not self.delay:
+
             self.stream = self._open()
         if self.backupCount > 0:
             for s in self.getFilesToDelete():
@@ -115,7 +121,8 @@ def write_log():
     stream_handler.setFormatter(fmt)
 
     log_name = "milvus"
-    file_handler = MultiprocessHandler(log_name, when='D', backupCount=LOGS_NUM)
+    file_handler = MultiprocessHandler(
+        log_name, when='D', backupCount=LOGS_NUM)
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(fmt)
     file_handler.doChangeFile()

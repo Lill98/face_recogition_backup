@@ -27,7 +27,8 @@ from typing import List
 from threading import Thread
 from operations.backup_restore import backup, restore
 from operations.load import format_data
-
+import time
+import torch
 # from
 app = FastAPI()
 origins = ["*"]
@@ -89,8 +90,15 @@ async def load_images(item: Item):
                 item.Table)
         else:
             list_check_image = None
+        start_load = time.time()
         total_num = do_load(item.Table, item.File, MODEL,
                             MILVUS_CLI, MYSQL_CLI, list_check_image)
+        torch.cuda.synchronize()
+        end_load_time = time.time() - start_load
+        each_image = end_load_time/total_num
+        LOGGER.info(f"total load time: {end_load_time}")
+        LOGGER.info(f"load time per image: {each_image}")
+
         LOGGER.info(f"Successfully loaded data, total count: {total_num}")
         return "Successfully loaded data!"
     except Exception as e:
@@ -186,8 +194,13 @@ async def search_images(image: UploadFile = File(...), topk: int = Form(TOP_K), 
         # print("img_path", img_path)
         with open(img_path, "wb+") as f:
             f.write(content)
+        start_load = time.time()
+
         name_folder, paths, distances = do_search(
             table_name, img_path, topk, MODEL, MILVUS_CLI, MYSQL_CLI)
+        torch.cuda.synchronize()
+        end_load_time = time.time() - start_load
+        LOGGER.info(f"total search time: {end_load_time}")
         res = dict(zip(paths, distances))
         # print("---res", res)
         res = sorted(res.items(), key=lambda item: item[1], reverse=True)
@@ -285,5 +298,6 @@ async def get_name_table():
 
 # print("a")
 if __name__ == '__main__':
+    # uvicorn.run("main:app", host='0.0.0.0', port=5001)
     uvicorn.run("main:app", host='0.0.0.0', port=5001,
                 workers=3)
