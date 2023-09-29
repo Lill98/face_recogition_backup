@@ -110,27 +110,39 @@ class MultiprocessHandler(logging.FileHandler):
 
 
 def write_log():
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    # formatter = '%(asctime)s ｜ %(levelname)s ｜ %(filename)s ｜ %(funcName)s ｜ %(module)s ｜ %(lineno)s ｜ %(message)s'
-    fmt = logging.Formatter(
-        '%(asctime)s ｜ %(levelname)s ｜ %(filename)s ｜ %(funcName)s ｜ %(lineno)s ｜ %(message)s')
+    try:
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        # formatter = '%(asctime)s ｜ %(levelname)s ｜ %(filename)s ｜ %(funcName)s ｜ %(module)s ｜ %(lineno)s ｜ %(message)s'
+        fmt = logging.Formatter(
+            '%(asctime)s ｜ %(levelname)s ｜ %(filename)s ｜ %(funcName)s ｜ %(lineno)s ｜ %(message)s')
 
-    stream_handler = logging.StreamHandler(sys.stdout)
-    stream_handler.setLevel(logging.INFO)
-    stream_handler.setFormatter(fmt)
+        stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler.setLevel(logging.INFO)
+        stream_handler.setFormatter(fmt)
 
-    log_name = "milvus"
-    file_handler = MultiprocessHandler(
-        log_name, when='D', backupCount=LOGS_NUM)
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(fmt)
-    file_handler.doChangeFile()
+        log_name = "milvus"
+        file_handler = MultiprocessHandler(
+            log_name, when='D', backupCount=LOGS_NUM)
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(fmt)
+        file_handler.doChangeFile()
 
-    logger.addHandler(stream_handler)
-    logger.addHandler(file_handler)
+        logger.addHandler(stream_handler)
+        logger.addHandler(file_handler)
 
-    return logger
+        return logger
+    except:
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        # formatter = '%(asctime)s ｜ %(levelname)s ｜ %(filename)s ｜ %(funcName)s ｜ %(module)s ｜ %(lineno)s ｜ %(message)s'
+        fmt = logging.Formatter(
+            '%(asctime)s ｜ %(levelname)s ｜ %(filename)s ｜ %(funcName)s ｜ %(lineno)s ｜ %(message)s')
+        stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler.setLevel(logging.INFO)
+        stream_handler.setFormatter(fmt)
+        logger.addHandler(stream_handler)
+        return logger
 
 
 LOGGER = write_log()
