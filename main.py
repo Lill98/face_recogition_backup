@@ -196,7 +196,7 @@ async def search_images(image: UploadFile = File(...), topk: int = Form(TOP_K), 
             f.write(content)
         start_load = time.time()
 
-        name_folder, paths, distances = do_search(
+        name_folder, paths, distances, message = do_search(
             table_name, img_path, topk, MODEL, MILVUS_CLI, MYSQL_CLI)
         torch.cuda.synchronize()
         end_load_time = time.time() - start_load
@@ -222,7 +222,7 @@ async def search_images_real(image: UploadFile = File(...), topk: int = Form(TOP
         # print("img_path", img_path)
         with open(img_path, "wb+") as f:
             f.write(content)
-        name_folder, paths, distances = do_search(
+        name_folder, paths, distances, message = do_search(
             table_name, img_path, topk, MODEL, MILVUS_CLI, MYSQL_CLI)
         if name_folder is not None:
             res = dict(zip(paths, zip(name_folder, distances)))
@@ -245,7 +245,7 @@ async def search_images_real(image: UploadFile = File(...), topk: int = Form(TOP
             LOGGER.info("Successfully searched similar images!")
             return {"name": value_init[-1][0], "cosine similarity": value_init[-1][1], "path": value_init[0]}
         else:
-            return {"can't detect face"}
+            return {message}
     except Exception as e:
         LOGGER.error(e)
         return {' ': False, 'msg': e}, 400
