@@ -12,11 +12,13 @@ class MilvusHelper:
         args_0 (`type`):
         ...
     """
+
     def __init__(self):
         try:
             self.collection = None
             connections.connect(host=MILVUS_HOST, port=MILVUS_PORT)
-            LOGGER.debug(f"Successfully connect to Milvus with IP:{MILVUS_HOST} and PORT:{MILVUS_PORT}")
+            LOGGER.debug(
+                f"Successfully connect to Milvus with IP:{MILVUS_HOST} and PORT:{MILVUS_PORT}")
         except Exception as e:
             LOGGER.error(f"Failed to connect Milvus: {e}")
             sys.exit(1)
@@ -26,10 +28,17 @@ class MilvusHelper:
             if self.has_collection(collection_name):
                 self.collection = Collection(name=collection_name)
             else:
-                raise Exception(f"There is no collection named:{collection_name}")
+                LOGGER.error(f"There is no collection named:{collection_name}")
+
+                raise Exception(
+                    f"There is no collection named:{collection_name}")
+                # return None
+
         except Exception as e:
             LOGGER.error(f"Failed to load data to Milvus: {e}")
             sys.exit(1)
+
+            # return None
 
     def has_collection(self, collection_name):
         # Return if Milvus has the collection
@@ -43,11 +52,14 @@ class MilvusHelper:
         # Create milvus collection if not exists
         try:
             if not self.has_collection(collection_name):
-                field1 = FieldSchema(name="id", dtype=DataType.INT64, descrition="int64", is_primary=True, auto_id=True)
+                field1 = FieldSchema(
+                    name="id", dtype=DataType.INT64, descrition="int64", is_primary=True, auto_id=True)
                 field2 = FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, descrition="float vector",
                                      dim=VECTOR_DIMENSION, is_primary=False)
-                schema = CollectionSchema(fields=[field1, field2], description="collection description")
-                self.collection = Collection(name=collection_name, schema=schema, consistency_level="Strong")
+                schema = CollectionSchema(
+                    fields=[field1, field2], description="schema")
+                self.collection = Collection(
+                    name=collection_name, schema=schema, consistency_level="Strong")
                 LOGGER.debug(f"Create Milvus collection: {collection_name}")
             else:
                 self.set_collection(collection_name)
@@ -72,7 +84,7 @@ class MilvusHelper:
             mr = self.collection.insert(data)
             ids = mr.primary_keys
             LOGGER.debug(
-                    f"Insert vectors to Milvus in collection: {collection_name} with {len(vectors)} rows")
+                f"Insert vectors to Milvus in collection: {collection_name} with {len(vectors)} rows")
             return ids
         except Exception as e:
             LOGGER.error(f"Failed to load data to Milvus: {e}")
@@ -87,7 +99,7 @@ class MilvusHelper:
             mr = self.collection.insert(data)
             ids = mr.primary_keys
             LOGGER.debug(
-                    f"Insert new vectors to Milvus in collection: {collection_name} with {len(vectors)} rows")
+                f"Insert new vectors to Milvus in collection: {collection_name} with {len(vectors)} rows")
             return ids
         except Exception as e:
             LOGGER.error(f"Failed to load data to Milvus: {e}")
@@ -97,8 +109,10 @@ class MilvusHelper:
         # Create IVF_FLAT index on milvus collection
         try:
             self.set_collection(collection_name)
-            default_index = {"index_type": "IVF_SQ8", "metric_type": METRIC_TYPE, "params": {"nlist": 16384}}
-            status = self.collection.create_index(field_name="embedding", index_params=default_index)
+            default_index = {"index_type": "GPU_IVF_FLAT",
+                             "metric_type": METRIC_TYPE, "params": {"nlist": 30000}}
+            status = self.collection.create_index(
+                field_name="embedding", index_params=default_index)
             if not status.code:
                 LOGGER.debug(
                     f"Successfully create index in collection:{collection_name} with param:{default_index}")
@@ -126,7 +140,7 @@ class MilvusHelper:
             expr = "id in " + str(expr)
             self.set_collection(collection_name)
             self.collection.delete(expr)
-            LOGGER.debug("Successfully drop collection!")
+            LOGGER.debug("Successfully drop entity!")
             return "ok"
         except Exception as e:
             LOGGER.error(f"Failed to drop collection: {e}")
@@ -137,31 +151,33 @@ class MilvusHelper:
         try:
             self.set_collection(collection_name)
             self.collection.load()
-            search_params = {"metric_type": METRIC_TYPE, "params": {"nprobe": 10}}
+            search_params = {"metric_type": METRIC_TYPE,
+                             "params": {"nprobe": 10}}
             # data = [vectors]
             # print("search", len(vectors))
             # print("search", len(vectors[0]))
-            
+
             # with open("test.txt","a") as f:
             #     # for da in data[0]:
             #     f.write("search-----\n"+str(vectors[0]))
             # print("search", len(vectors[0][0]))
 
-            
-            res = self.collection.search(vectors, anns_field="embedding", param=search_params, limit=top_k, expr=None, consistency_level="Strong")
+            res = self.collection.search(
+                vectors, anns_field="embedding", param=search_params, limit=top_k, expr=None, consistency_level="Strong")
             # print(res[0])
             LOGGER.debug(f"Successfully search in collection: {res}")
             return res
         except Exception as e:
             LOGGER.error(f"Failed to search vectors in Milvus: {e}")
-            sys.exit(1)
+            return None
 
     def count(self, collection_name):
         # Get the number of milvus collection
         try:
             self.set_collection(collection_name)
             num = self.collection.num_entities
-            LOGGER.debug(f"Successfully get the num:{num} of the collection:{collection_name}")
+            LOGGER.debug(
+                f"Successfully get the num:{num} of the collection:{collection_name}")
             return num
         except Exception as e:
             LOGGER.error(f"Failed to count vectors in Milvus: {e}")

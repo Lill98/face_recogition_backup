@@ -1,6 +1,8 @@
 from logs import LOGGER
 from config import DEFAULT_TABLE
 import sys
+import time
+import torch
 
 sys.path.append("..")
 
@@ -11,7 +13,12 @@ def do_search(table_name, img_path, top_k, model, milvus_client, mysql_cli):
         if not table_name:
             table_name = DEFAULT_TABLE
         # feat = model.resnet50_extract_feat(img_path)
+        start_load = time.time()
         embedding_result, name_folders, img_list = model.infer([img_path])
+        torch.cuda.synchronize()
+        end_infer_time = time.time() - start_load
+        LOGGER.info(f"infer time: {end_infer_time}")
+
         if embedding_result is not None:
             feat = embedding_result.cpu().detach().tolist()[0]
             # print("feat:", feat)
@@ -41,6 +48,8 @@ def do_search(table_name, img_path, top_k, model, milvus_client, mysql_cli):
                         vids, table_name)
                     distances = [x.distance for x in vectors[0]]
                     message = "good"
+                    end_load_time = time.time() - start_load - end_infer_time
+                    LOGGER.info(f"only search time: {end_load_time}")
         else:
             name_folder, paths, distances, message = None, None, None, None
         # print(":paths", paths)

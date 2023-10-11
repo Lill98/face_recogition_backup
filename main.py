@@ -135,6 +135,8 @@ async def upload_images(images: List[UploadFile] = File(None), urls: List[str] =
     list_name_folder = []
     list_feat = []
     result = {'status': True, 'msg': ""}
+    start_load = time.time()
+
     for image, url in zip(images, urls):
         os.makedirs(url, exist_ok=True)
         # split_path = [i for i in url.split("/") if len(i) > 0]
@@ -149,6 +151,16 @@ async def upload_images(images: List[UploadFile] = File(None), urls: List[str] =
             list_image.append(image.filename)
             with open(img_path, "wb+") as f:
                 f.write(content)
+        #     ids, img_path, name_folder, feat = upload_data(
+        #         url, img_path, table_name)
+        #     if ids:
+        #         list_ids.append(ids[0])
+        #         list_img_path.append(img_path)
+        #         list_name_folder.append(name_folder)
+        #         list_feat.append(feat[0])
+        #     else:
+        #         if img_path:
+        #             list_fail_detect.append(img_path.split("/")[-1])
 
         else:
             return {'status': False, 'msg': 'Image and url are required'}, 400
@@ -169,9 +181,18 @@ async def upload_images(images: List[UploadFile] = File(None), urls: List[str] =
             if img_path:
                 list_fail_detect.append(img_path.split("/")[-1])
     if list_ids:
+        start_mysql = time.time()
+
         MYSQL_CLI.create_mysql_table(table_name)
         MYSQL_CLI.load_data_to_mysql(table_name, format_data(
             list_ids, list_img_path, list_name_folder, list_feat))
+        end_mysql = time.time() - start_mysql
+        LOGGER.info(f"insert mysql time: {end_mysql}")
+    torch.cuda.synchronize()
+    end_load_time = time.time() - start_load
+    each_image = end_load_time/len(urls)
+    LOGGER.info(f"total load time: {end_load_time}")
+    LOGGER.info(f"load time per image: {each_image}")
 
     if list_fail_detect:
         return {'status': False, 'msg': f'Can not detect face at image {list_fail_detect}. Please replace other image'}, 400
@@ -198,9 +219,7 @@ async def search_images(image: UploadFile = File(...), topk: int = Form(TOP_K), 
 
         name_folder, paths, distances, message = do_search(
             table_name, img_path, topk, MODEL, MILVUS_CLI, MYSQL_CLI)
-        torch.cuda.synchronize()
-        end_load_time = time.time() - start_load
-        LOGGER.info(f"total search time: {end_load_time}")
+
         res = dict(zip(paths, distances))
         # print("---res", res)
         res = sorted(res.items(), key=lambda item: item[1], reverse=True)
@@ -222,6 +241,8 @@ async def search_images_real(image: UploadFile = File(...), topk: int = Form(TOP
         # print("img_path", img_path)
         with open(img_path, "wb+") as f:
             f.write(content)
+        start_load = time.time()
+
         name_folder, paths, distances, message = do_search(
             table_name, img_path, topk, MODEL, MILVUS_CLI, MYSQL_CLI)
         if name_folder is not None:
@@ -241,6 +262,9 @@ async def search_images_real(image: UploadFile = File(...), topk: int = Form(TOP
                     value_init = res[idx]
                     if idx == 0:
                         break
+            torch.cuda.synchronize()
+            end_load_time = time.time() - start_load
+            LOGGER.info(f"total search time: {end_load_time}")
 
             LOGGER.info("Successfully searched similar images!")
             return {"name": value_init[-1][0], "cosine similarity": value_init[-1][1], "path": value_init[0]}
