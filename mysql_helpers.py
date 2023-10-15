@@ -100,7 +100,8 @@ class MySQLHelper():
             return [int(i[0]) for i in results], [i[1] for i in results]
         except Exception as e:
             LOGGER.error(f"MYSQL ERROR: {e} with sql: {sql}")
-            sys.exit(1)
+            return [], []
+            # sys.exit(1)
 
     def search_image_path_by_table_name(self, table_name):
         self.test_connection()
@@ -113,7 +114,7 @@ class MySQLHelper():
             return [i[0] for i in results]
         except Exception as e:
             LOGGER.error(f"MYSQL ERROR: {e} with sql: {sql}")
-            return None
+            return []
 
     def delete_table(self, table_name):
         # Delete mysql table if exists
